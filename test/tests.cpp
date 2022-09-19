@@ -1,5 +1,6 @@
 #include <iostream>
 #include <gtest/gtest.h>
+#include <gtest/gtest-spi.h>
 #include "../include/LRUCache.hpp"
 
 TEST(LRUCacheTests, create) {
@@ -37,7 +38,7 @@ TEST(LRUCacheTests, put_elements) {
     EXPECT_EQ(nullptr, cache.get(0));
 }
 
-TEST(LRUCacheTests, rewrite_exist_element) {
+TEST(LRUCacheTests, try_to_rewrite_exist_element) {
     size_t capacity = 10;
     LRUCache<int, int> cache(capacity);
     EXPECT_EQ(0, cache.getSize());
@@ -45,8 +46,8 @@ TEST(LRUCacheTests, rewrite_exist_element) {
         cache.put(i, i + 1);
         EXPECT_EQ(i + 1, cache.getSize());
     }
-    cache.put(9, 11);
-    EXPECT_EQ(11, *cache.get(9));
+    EXPECT_EXIT(cache.put(9, 11),::testing::KilledBySignal(SIGABRT), "Assertion failed:");
+    EXPECT_EQ(10, *cache.get(9));
 }
 
 GTEST_API_ int main(int argc, char ** argv) {

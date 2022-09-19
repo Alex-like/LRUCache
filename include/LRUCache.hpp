@@ -14,9 +14,11 @@ protected:
         K key;
         V value;
         node *prev = nullptr, *next = nullptr;
+
+        node(const K key, const V value);
     };
 
-    size_t capacity = 0, size = 0;
+    size_t capacity = 0;
     node *head, *tail;
     std::unordered_map<K, node*> hash_map;
 
@@ -31,9 +33,16 @@ public:
     void put(K key, V value);
 };
 
+template<typename K, typename V>
+LRUCache<K, V>::node::node(const K key, const V value) {
+    this->key = key;
+    this->value = value;
+}
+
 
 template<typename K, typename V>
 void LRUCache<K, V>::update_head(LRUCache::node *new_head) {
+    assert(new_head != nullptr);
     if (head == nullptr) {
         head = new_head;
         tail = new_head;
@@ -59,7 +68,7 @@ void LRUCache<K, V>::remove_tail() {
 
 template<typename K, typename V>
 LRUCache<K, V>::LRUCache(const size_t capacity) {
-    this->size = 0;
+    assert(capacity > 0);
     this->capacity = capacity;
     this->hash_map = std::unordered_map<K, node*>();
     this->tail = nullptr;
@@ -73,7 +82,7 @@ size_t LRUCache<K, V>::getCapacity() const {
 
 template<typename K, typename V>
 size_t LRUCache<K, V>::getSize() const {
-    return size;
+    return hash_map.size();
 }
 
 template<typename K, typename V>
@@ -84,29 +93,22 @@ V* LRUCache<K, V>::get(K key) {
         hash_map[key]->next->prev = hash_map[key]->prev;
     hash_map[key]->next = nullptr;
     update_head(hash_map[key]);
+    assert(head == hash_map[key]);
     return &(hash_map[key]->value);
 }
 
 template<typename K, typename V>
 void LRUCache<K, V>::put(K key, V value) {
-    if (hash_map.find(key) != hash_map.end()) {
-        hash_map[key]->value = value;
-        if (hash_map[key]->next != nullptr)
-            hash_map[key]->next->prev = hash_map[key]->prev;
-        hash_map[key]->next = nullptr;
-        update_head(hash_map[key]);
-        return;
-    }
-    if (size < capacity)
-        size++;
-    else
+    assert(hash_map.find(key) == hash_map.end());
+    if (hash_map.size() == capacity)
         remove_tail();
-    node *new_node = new node();
+    node *new_node = new node(key, value);
     new_node->key = key;
     new_node->value = value;
     new_node->next = nullptr;
     update_head(new_node);
     hash_map[key] = new_node;
+    assert(head == hash_map[key]);
 }
 
 #endif //LRUCACHE_HPP
