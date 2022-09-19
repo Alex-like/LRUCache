@@ -27,8 +27,8 @@ protected:
 
 public:
     explicit LRUCache(size_t capacity = 100);
-    size_t getCapacity() const;
-    size_t getSize() const;
+    size_t get_capacity() const;
+    size_t get_size() const;
     V* get(K key);
     void put(K key, V value);
 };
@@ -76,12 +76,12 @@ LRUCache<K, V>::LRUCache(const size_t capacity) {
 }
 
 template<typename K, typename V>
-size_t LRUCache<K, V>::getCapacity() const {
+size_t LRUCache<K, V>::get_capacity() const {
     return capacity;
 }
 
 template<typename K, typename V>
-size_t LRUCache<K, V>::getSize() const {
+size_t LRUCache<K, V>::get_size() const {
     return hash_map.size();
 }
 
@@ -89,6 +89,13 @@ template<typename K, typename V>
 V* LRUCache<K, V>::get(K key) {
     if (hash_map.find(key) == hash_map.end())
         return nullptr;
+    if (hash_map[key] == tail) {
+        head->next = tail->next;
+        tail->prev = head->prev;
+        head->prev = nullptr;
+        tail->next = nullptr;
+        std::swap(head, tail);
+    }
     if (hash_map[key]->next != nullptr)
         hash_map[key]->next->prev = hash_map[key]->prev;
     hash_map[key]->next = nullptr;
