@@ -19,11 +19,12 @@ protected:
     };
 
     size_t capacity = 0;
+    // head <- next <- ... <- next <- tail
+    // head -> prev -> ... -> prev -> tail
     node *head, *tail;
     std::unordered_map<K, node*> hash_map;
 
     void update_head(node *new_head);
-    void remove_tail();
 
 public:
     explicit LRUCache(size_t capacity = 100);
@@ -39,31 +40,27 @@ LRUCache<K, V>::node::node(const K key, const V value) {
     this->value = value;
 }
 
-
 template<typename K, typename V>
 void LRUCache<K, V>::update_head(LRUCache::node *new_head) {
     assert(new_head != nullptr);
-    if (head == nullptr) {
-        head = new_head;
-        tail = new_head;
+    if (new_head->next != nullptr && new_head->prev != nullptr) {
+        new_head->next->prev = new_head->prev;
+        new_head->prev->next = new_head->next;
+    } else if (new_head->next != nullptr && new_head->prev == nullptr) {
+        tail = tail->next;
+    } else if (new_head->next == nullptr && new_head->prev == nullptr) {
+        if (head == nullptr && tail == nullptr) {
+            head = tail = new_head;
+            return;
+        }
+    } else {
+        assert(head == new_head);
         return;
     }
-    new_head->prev = head;
     head->next = new_head;
+    new_head->prev = head;
     head = new_head;
-}
-
-template<typename K, typename V>
-void LRUCache<K, V>::remove_tail() {
-    if (tail == nullptr) return;
-    if (tail->next != nullptr) {
-        hash_map.erase(tail->key);
-        tail->next->prev = nullptr;
-        tail = tail->next;
-    }
-    hash_map.erase(tail->key);
-    tail = nullptr;
-    head = nullptr;
+    assert(head == new_head);
 }
 
 template<typename K, typename V>
@@ -89,16 +86,6 @@ template<typename K, typename V>
 V* LRUCache<K, V>::get(K key) {
     if (hash_map.find(key) == hash_map.end())
         return nullptr;
-    if (hash_map[key] == tail) {
-        head->next = tail->next;
-        tail->prev = head->prev;
-        head->prev = nullptr;
-        tail->next = nullptr;
-        std::swap(head, tail);
-    }
-    if (hash_map[key]->next != nullptr)
-        hash_map[key]->next->prev = hash_map[key]->prev;
-    hash_map[key]->next = nullptr;
     update_head(hash_map[key]);
     assert(head == hash_map[key]);
     return &(hash_map[key]->value);
@@ -107,14 +94,15 @@ V* LRUCache<K, V>::get(K key) {
 template<typename K, typename V>
 void LRUCache<K, V>::put(K key, V value) {
     assert(hash_map.find(key) == hash_map.end());
-    if (hash_map.size() == capacity)
-        remove_tail();
+    if (hash_map.size() >= capacity) {
+        hash_map.erase(tail->key);
+        tail = tail->next;
+        if (tail != nullptr)
+            tail->prev = nullptr;
+    }
     node *new_node = new node(key, value);
-    new_node->key = key;
-    new_node->value = value;
-    new_node->next = nullptr;
-    update_head(new_node);
     hash_map[key] = new_node;
+    update_head(new_node);
     assert(head == hash_map[key]);
 }
 
